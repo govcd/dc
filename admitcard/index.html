@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admit Card Tracker | Dhaka College</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f0f2f5;
+            color: #1a1a2e;
+            line-height: 1.6;
+        }
+        .header {
+            background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+            color: white;
+            padding: 20px 0;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+        }
+        .header h1 { font-size: 1.8em; margin-bottom: 5px; }
+        .header p { opacity: 0.9; font-size: 0.95em; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+
+        /* Stats Cards */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            border-top: 4px solid #0d6efd;
+        }
+        .stat-card.green { border-top-color: #198754; }
+        .stat-card.red { border-top-color: #dc3545; }
+        .stat-card.orange { border-top-color: #fd7e14; }
+        .stat-card h3 { font-size: 2em; color: #0d6efd; }
+        .stat-card.green h3 { color: #198754; }
+        .stat-card.red h3 { color: #dc3545; }
+        .stat-card.orange h3 { color: #fd7e14; }
+        .stat-card p { font-size: 0.85em; color: #666; margin-top: 5px; }
+
+        /* Exam Cards */
+        .exam-card {
+            background: white;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            overflow: hidden;
+        }
+        .exam-header {
+            background: linear-gradient(135deg, #16213e 0%, #1a1a2e 100%);
+            color: white;
+            padding: 18px 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+        }
+        .exam-header:hover { background: linear-gradient(135deg, #1a2744 0%, #222244 100%); }
+        .exam-title h2 { font-size: 1.2em; margin-bottom: 3px; }
+        .exam-title .meta { font-size: 0.85em; opacity: 0.8; }
+        .exam-stats-badge {
+            display: flex;
+            gap: 12px;
+        }
+        .badge {
+            padding: 5px 14px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+        .badge-green { background: #198754; color: white; }
+        .badge-red { background: #dc3545; color: white; }
+
+        /* Exam Body */
+        .exam-body {
+            padding: 20px 25px;
+            display: none;
+        }
+        .exam-body.active { display: block; }
+
+        .exam-info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .info-item {
+            background: #f8f9fa;
+            padding: 10px 15px;
+            border-radius: 8px;
+            border-left: 3px solid #0d6efd;
+        }
+        .info-item .label { font-size: 0.75em; color: #666; text-transform: uppercase; letter-spacing: 0.5px; }
+        .info-item .value { font-size: 1em; font-weight: 600; color: #1a1a2e; margin-top: 2px; }
+
+        /* Tabs */
+        .tab-buttons {
+            display: flex;
+            gap: 0;
+            border-bottom: 2px solid #dee2e6;
+            margin-bottom: 15px;
+        }
+        .tab-btn {
+            padding: 10px 20px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: 0.9em;
+            font-weight: 500;
+            color: #666;
+            border-bottom: 3px solid transparent;
+            transition: all 0.2s;
+        }
+        .tab-btn:hover { color: #0d6efd; }
+        .tab-btn.active {
+            color: #0d6efd;
+            border-bottom-color: #0d6efd;
+        }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* Search */
+        .search-box {
+            width: 100%;
+            max-width: 400px;
+            padding: 10px 15px;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            font-size: 0.9em;
+            margin-bottom: 15px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .search-box:focus { border-color: #0d6efd; }
+
+        /* Student Table */
+        .student-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.88em;
+        }
+        .student-table th {
+            background: #f8f9fa;
+            padding: 10px 12px;
+            text-align: left;
+            font-weight: 600;
+            color: #495057;
+            border-bottom: 2px solid #dee2e6;
+            position: sticky;
+            top: 0;
+        }
+        .student-table td {
+            padding: 8px 12px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .student-table tr:hover td { background: #f8f9fa; }
+        .student-table .found { color: #198754; font-weight: 600; }
+        .student-table .not-found { color: #dc3545; }
+
+        .pdf-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            color: #0d6efd;
+            text-decoration: none;
+            font-weight: 500;
+            padding: 3px 10px;
+            border-radius: 5px;
+            background: #e7f1ff;
+            font-size: 0.85em;
+        }
+        .pdf-link:hover { background: #cce0ff; }
+        .copy-btn {
+            cursor: pointer;
+            background: #f0f0f0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 2px 8px;
+            font-size: 0.8em;
+            color: #555;
+        }
+        .copy-btn:hover { background: #e0e0e0; }
+
+        .table-scroll {
+            max-height: 500px;
+            overflow-y: auto;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+        }
+
+        /* Loading / Empty State */
+        .loading { text-align: center; padding: 60px; color: #888; }
+        .empty-state { text-align: center; padding: 60px; color: #888; }
+        .empty-state h3 { margin-bottom: 10px; color: #aaa; }
+
+        /* Group Filter */
+        .group-filters {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+        }
+        .group-btn {
+            padding: 5px 15px;
+            border: 1px solid #dee2e6;
+            border-radius: 20px;
+            background: white;
+            cursor: pointer;
+            font-size: 0.83em;
+        }
+        .group-btn.active { background: #0d6efd; color: white; border-color: #0d6efd; }
+
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #888;
+            font-size: 0.8em;
+            margin-top: 30px;
+        }
+
+        @media (max-width: 768px) {
+            .exam-header { flex-direction: column; gap: 10px; align-items: flex-start; }
+            .stats-row { grid-template-columns: repeat(2, 1fr); }
+            .exam-info-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📋 Admit Card Tracker</h1>
+        <p>Dhaka College (DC) — Exam Admit Card Status Dashboard</p>
+    </div>
+
+    <div class="container">
+        <!-- Global Stats -->
+        <div id="global-stats" class="stats-row" style="margin-top: 20px;"></div>
+
+        <!-- Exam List -->
+        <div id="exam-list">
+            <div class="loading">📡 Loading data...</div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>Dhaka College Admit Card Tracker | Auto-generated by admitcard_checker.py</p>
+        <p id="last-updated"></p>
+    </div>
+
+    <script>
+    // ── Load data ──
+    const DATA_URL = 'data/all_exams.json';
+
+    async function loadData() {
+        try {
+            const resp = await fetch(DATA_URL);
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+            const data = await resp.json();
+            renderDashboard(data);
+        } catch (err) {
+            document.getElementById('exam-list').innerHTML = `
+                <div class="empty-state">
+                    <h3>📭 No Data Found</h3>
+                    <p>Run <code>python admitcard_checker.py</code> to check admit cards first.</p>
+                    <p style="margin-top:10px; font-size:0.85em; color:#aaa;">Error: ${err.message}</p>
+                </div>
+            `;
+        }
+    }
+
+    function renderDashboard(data) {
+        const exams = data.exams || [];
+
+        // ── Global Stats ──
+        const totalExams = exams.length;
+        const totalFound = exams.reduce((s, e) => s + (e.total_with_admit || 0), 0);
+        const totalMissing = exams.reduce((s, e) => s + (e.total_without_admit || 0), 0);
+
+        document.getElementById('global-stats').innerHTML = `
+            <div class="stat-card orange">
+                <h3>${totalExams}</h3>
+                <p>Total Exams Tracked</p>
+            </div>
+            <div class="stat-card green">
+                <h3>${totalFound.toLocaleString()}</h3>
+                <p>Total Admit Cards Found</p>
+            </div>
+            <div class="stat-card red">
+                <h3>${totalMissing.toLocaleString()}</h3>
+                <p>Total Not Found</p>
+            </div>
+            <div class="stat-card">
+                <h3>${(totalExams > 0 ? exams[0].batch_label : '—').split(' ')[0]}</h3>
+                <p>Latest Batch</p>
+            </div>
+        `;
+
+        if (data.last_updated) {
+            document.getElementById('last-updated').textContent =
+                `Last updated: ${new Date(data.last_updated).toLocaleString('bn-BD')}`;
+        }
+
+        // ── Exam Cards ──
+        if (exams.length === 0) {
+            document.getElementById('exam-list').innerHTML = `
+                <div class="empty-state">
+                    <h3>📭 No Exams Tracked Yet</h3>
+                    <p>Run <code>python admitcard_checker.py</code> to get started.</p>
+                </div>
+            `;
+            return;
+        }
+
+        let html = '';
+        exams.forEach((exam, idx) => {
+            const examName = exam.exam_name || 'Exam';
+            const subject = exam.subject || '';
+            const title = subject ? `${examName} — ${subject}` : examName;
+            const checkedAt = new Date(exam.checked_at).toLocaleString('bn-BD');
+
+            html += `
+            <div class="exam-card">
+                <div class="exam-header" onclick="toggleExam(${idx})">
+                    <div class="exam-title">
+                        <h2>${title || 'Admit Card Check'}</h2>
+                        <div class="meta">${exam.batch_label || exam.batch} | Checked: ${checkedAt}</div>
+                    </div>
+                    <div class="exam-stats-badge">
+                        <span class="badge badge-green">✓ ${exam.total_with_admit || 0} Found</span>
+                        <span class="badge badge-red">✗ ${exam.total_without_admit || 0} Missing</span>
+                    </div>
+                </div>
+                <div class="exam-body" id="exam-body-${idx}">
+                    <!-- Exam Info -->
+                    <div class="exam-info-grid">
+                        <div class="info-item">
+                            <div class="label">Exam Name</div>
+                            <div class="value">${exam.exam_name || 'N/A'}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="label">Subject</div>
+                            <div class="value">${exam.subject || 'N/A'}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="label">Exam Date</div>
+                            <div class="value">${exam.exam_date || 'N/A'}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="label">Exam Time</div>
+                            <div class="value">${exam.exam_time || 'N/A'}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="label">Center / Gallery</div>
+                            <div class="value">${exam.exam_center || 'N/A'}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="label">Total Checked</div>
+                            <div class="value">${exam.total_checked || 0}</div>
+                        </div>
+                    </div>
+
+                    <!-- Tabs -->
+                    <div class="tab-buttons">
+                        <button class="tab-btn active" onclick="switchTab(${idx}, 'found')">
+                            ✓ Admit Card Found (${exam.total_with_admit || 0})
+                        </button>
+                        <button class="tab-btn" onclick="switchTab(${idx}, 'missing')">
+                            ✗ Not Found (${exam.total_without_admit || 0})
+                        </button>
+                    </div>
+
+                    <!-- Search -->
+                    <input type="text" class="search-box" placeholder="🔍 Search by roll or name..."
+                           oninput="filterTable(${idx}, this.value)">
+
+                    <!-- Group Filters -->
+                    <div class="group-filters" id="group-filters-${idx}">
+                        <button class="group-btn active" onclick="filterGroup(${idx}, 'all', this)">All</button>
+                        <button class="group-btn" onclick="filterGroup(${idx}, 'Science', this)">Science</button>
+                        <button class="group-btn" onclick="filterGroup(${idx}, 'Business Studies', this)">Business</button>
+                        <button class="group-btn" onclick="filterGroup(${idx}, 'Humanities', this)">Humanities</button>
+                    </div>
+
+                    <!-- Found Table -->
+                    <div class="tab-content active" id="tab-found-${idx}">
+                        <div class="table-scroll">
+                            <table class="student-table" id="table-found-${idx}">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Roll</th>
+                                        <th>Short Roll</th>
+                                        <th>Group</th>
+                                        <th>Name</th>
+                                        <th>PDF Link</th>
+                                        <th>Copy</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${(exam.students_with_admit || []).map((s, i) => `
+                                    <tr data-group="${s.group}" data-search="${s.roll} ${s.short_roll} ${s.name}">
+                                        <td>${i + 1}</td>
+                                        <td><code>${s.roll}</code></td>
+                                        <td>${s.short_roll}</td>
+                                        <td>${s.group}</td>
+                                        <td>${s.name || '—'}</td>
+                                        <td><a href="${s.pdf_link}" target="_blank" class="pdf-link">📄 PDF</a></td>
+                                        <td><button class="copy-btn" onclick="copyLink('${s.pdf_link}', this)">📋 Copy</button></td>
+                                    </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Missing Table -->
+                    <div class="tab-content" id="tab-missing-${idx}">
+                        <div class="table-scroll">
+                            <table class="student-table" id="table-missing-${idx}">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Roll</th>
+                                        <th>Short Roll</th>
+                                        <th>Group</th>
+                                        <th>Name</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${(exam.students_without_admit || []).map((s, i) => `
+                                    <tr data-group="${s.group}" data-search="${s.roll} ${s.short_roll} ${s.name}">
+                                        <td>${i + 1}</td>
+                                        <td><code>${s.roll}</code></td>
+                                        <td>${s.short_roll}</td>
+                                        <td>${s.group}</td>
+                                        <td>${s.name || '—'}</td>
+                                        <td class="not-found">❌ No Admit Card</td>
+                                    </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            `;
+        });
+
+        document.getElementById('exam-list').innerHTML = html;
+
+        // Auto-expand the first exam
+        if (exams.length > 0) toggleExam(0);
+    }
+
+    // ── Toggle Exam Card ──
+    function toggleExam(idx) {
+        const body = document.getElementById(`exam-body-${idx}`);
+        body.classList.toggle('active');
+    }
+
+    // ── Switch Tab ──
+    function switchTab(idx, tab) {
+        // Update buttons
+        const buttons = document.querySelectorAll(`#exam-body-${idx} .tab-btn`);
+        buttons.forEach(b => b.classList.remove('active'));
+        event.target.classList.add('active');
+
+        // Update content
+        document.getElementById(`tab-found-${idx}`).classList.toggle('active', tab === 'found');
+        document.getElementById(`tab-missing-${idx}`).classList.toggle('active', tab === 'missing');
+    }
+
+    // ── Filter by search ──
+    function filterTable(idx, query) {
+        query = query.toLowerCase();
+        const tables = [
+            document.getElementById(`table-found-${idx}`),
+            document.getElementById(`table-missing-${idx}`)
+        ];
+        tables.forEach(table => {
+            if (!table) return;
+            const rows = table.querySelectorAll('tbody tr');
+            rows.forEach(row => {
+                const searchText = (row.dataset.search || '').toLowerCase();
+                row.style.display = searchText.includes(query) ? '' : 'none';
+            });
+        });
+    }
+
+    // ── Filter by group ──
+    function filterGroup(idx, group, btn) {
+        // Update buttons
+        const container = document.getElementById(`group-filters-${idx}`);
+        container.querySelectorAll('.group-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        // Filter rows
+        const tables = [
+            document.getElementById(`table-found-${idx}`),
+            document.getElementById(`table-missing-${idx}`)
+        ];
+        tables.forEach(table => {
+            if (!table) return;
+            const rows = table.querySelectorAll('tbody tr');
+            rows.forEach(row => {
+                if (group === 'all') {
+                    row.style.display = '';
+                } else {
+                    row.style.display = row.dataset.group === group ? '' : 'none';
+                }
+            });
+        });
+    }
+
+    // ── Copy PDF link ──
+    function copyLink(link, btn) {
+        navigator.clipboard.writeText(link).then(() => {
+            const orig = btn.textContent;
+            btn.textContent = '✅ Copied!';
+            setTimeout(() => btn.textContent = orig, 1500);
+        }).catch(() => {
+            // Fallback
+            const ta = document.createElement('textarea');
+            ta.value = link;
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+            btn.textContent = '✅ Copied!';
+            setTimeout(() => btn.textContent = '📋 Copy', 1500);
+        });
+    }
+
+    // ── Init ──
+    loadData();
+    </script>
+</body>
+</html>
